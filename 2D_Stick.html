@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bio-Shield | Core Hub</title>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        :root { --neon: #00eaff; --alert: #ff3b3b; --bg: #030712; }
+        * { -webkit-user-select: none; user-select: none; box-sizing: border-box; }
+        body { margin: 0; background: var(--bg); color: var(--neon); font-family: 'Orbitron', sans-serif; overflow: hidden; transition: opacity 0.5s; }
+        #layout { display: flex; height: 100vh; padding: 20px; gap: 40px; align-items: center; justify-content: center; }
+        #body-canvas { position: relative; width: 400px; height: 600px; background: rgba(0, 234, 255, 0.03); border: 2px solid rgba(0, 234, 255, 0.1); border-radius: 20px; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        #hud-bpm { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%); font-size: 3.5rem; font-weight: bold; text-shadow: 0 0 15px var(--neon); z-index: 10; }
+        .human-svg { height: 85%; width: auto; overflow: visible; z-index: 2; position: absolute; }
+        .part { fill: rgba(0, 234, 255, 0.05); stroke: var(--neon); stroke-width: 1.5; transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: center; }
+        .active-red { fill: rgba(255, 59, 59, 0.7) !important; stroke: var(--alert) !important; filter: drop-shadow(0 0 15px var(--alert)); }
+        .clickable-part { cursor: crosshair; pointer-events: auto !important; }
+        .defragged { stroke: #00ff88 !important; fill: rgba(0, 255, 136, 0.2) !important; transform: translate(0, 0) rotate(0) !important; }
+        .corrupted #part-head { transform: translateY(-30px) rotate(15deg); }
+        .corrupted #part-arm-l { transform: translate(-40px, -10px) rotate(-25deg); }
+        .corrupted #part-arm-r { transform: translate(40px, -10px) rotate(25deg); }
+        .corrupted #part-leg-l { transform: translate(-20px, 30px) rotate(-10deg); }
+        .corrupted #part-leg-r { transform: translate(20px, 30px) rotate(10deg); }
+        #noise-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/Noise_600x600.png'); opacity: 0; pointer-events: none; z-index: 9998; mix-blend-mode: overlay; }
+        #lock-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,10,20,0.8); z-index: 9999; backdrop-filter: blur(4px); display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .glitch-active { animation: screen-shake 0.15s infinite; filter: hue-rotate(90deg) contrast(1.5); }
+        @keyframes screen-shake { 0% { transform: translate(0,0); } 25% { transform: translate(5px, -5px); } 50% { transform: translate(-5px, 5px); } 100% { transform: translate(0,0); } }
+        #sidebar { width: 320px; display: flex; flex-direction: column; gap: 12px; }
+        .card { background: rgba(255,255,255,0.03); border-left: 5px solid var(--neon); padding: 15px; }
+        button { background: rgba(0, 34, 34, 0.9); border: 1px solid var(--neon); color: var(--neon); padding: 12px; cursor: pointer; font-family: 'Orbitron'; font-size: 11px; }
+        #coords-hud { position: absolute; top: 10px; right: 10px; font-family: monospace; font-size: 9px; color: var(--neon); text-align: right; pointer-events: none; opacity: 0.8; z-index: 10; }
+        .pulse-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px solid var(--neon); border-radius: 50%; pointer-events: none; opacity: 0; z-index: 1; }
+        @keyframes neural-expand { 0% { width: 40px; height: 40px; opacity: 0.8; border-width: 4px; } 100% { width: 500px; height: 500px; opacity: 0; border-width: 1px; } }
+        #digital-spine { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 280px; font-family: monospace; font-size: 10px; overflow: hidden; color: var(--neon); mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent); opacity: 0.4; z-index: 3; pointer-events: none; text-align: center; line-height: 10px; word-break: break-all; }
+        .spine-surge { opacity: 1 !important; filter: drop-shadow(0 0 5px var(--neon)); transition: opacity 0.1s; }
+    </style>
+</head>
+<body>
+<div id="noise-overlay"></div>
+<div id="lock-overlay"><h1 style="letter-spacing: 10px;">NEURAL LOCK</h1><p>AUTHORIZATION REQUIRED ON TACTICAL LINK</p></div>
+<div id="layout">
+    <div id="body-canvas">
+        <div id="hud-bpm">72</div>
+        <div id="coords-hud"></div>
+        <div id="digital-spine"></div>
+        <svg class="human-svg ghost-layer" viewBox="0 0 100 200" style="opacity: 0;">
+            <circle cx="50" cy="22" r="14" fill="none" stroke="rgba(255,255,255,0.1)" stroke-dasharray="2" />
+            <path d="M35,40 h30 l6,65 h-42 z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-dasharray="2" />
+            <path d="M33,45 l-18,10 l-4,40 h6 l4,-35 z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-dasharray="2" />
+            <path d="M67,45 l18,10 l4,40 h-6 l-4,-35 z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-dasharray="2" />
+            <path d="M38,105 l-3,85 h10 l4,-85 z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-dasharray="2" />
+            <path d="M62,105 l3,85 h-10 l-4,-85 z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-dasharray="2" />
+        </svg>
+        <svg class="human-svg main-svg" viewBox="0 0 100 200">
+            <defs><filter id="thermal-glow"><feGaussianBlur id="thermal-blur" stdDeviation="2" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" /></filter></defs>
+            <circle id="part-head" class="part" cx="50" cy="22" r="14" />
+            <path id="part-torso" class="part" d="M35,40 h30 l6,65 h-42 z" />
+            <path id="part-arm-l" class="part" d="M33,45 l-18,10 l-4,40 h6 l4,-35 z" />
+            <path id="part-arm-r" class="part" d="M67,45 l18,10 l4,40 h-6 l-4,-35 z" />
+            <path id="part-leg-l" class="part" d="M38,105 l-3,85 h10 l4,-85 z" />
+            <path id="part-leg-r" class="part" d="M62,105 l3,85 h-10 l-4,-85 z" />
+        </svg>
+    </div>
+    <div id="sidebar">
+        <div class="card"><div id="status-txt" style="font-size: 20px; font-weight: bold;">NOMINAL</div></div>
+        <button onclick="changeMode('injection')">NEURAL INJECTION</button>
+        <button onclick="changeMode('spasm')">MOTOR FAILURE</button>
+        <button onclick="changeMode('nominal')">FORCE STABILIZE</button>
+    </div>
+</div>
+<script>
+    const hubChannel = new BroadcastChannel('bio_shield_link');
+    let bpm = 72, userProgress = 0, thermalActive = true;
+    const parts = ['part-torso', 'part-head', 'part-arm-l', 'part-arm-r', 'part-leg-l', 'part-leg-r'];
+    let audioCtx, feedbackGain, feedbackOsc;
+
+    function initFeedbackAudio() {
+        if (audioCtx) return;
+        audioCtx = new AudioContext();
+        feedbackGain = audioCtx.createGain();
+        feedbackGain.gain.value = 0;
+        feedbackOsc = audioCtx.createOscillator();
+        feedbackOsc.type = 'square';
+        feedbackOsc.connect(feedbackGain);
+        feedbackGain.connect(audioCtx.destination);
+        feedbackOsc.start();
+    }
+
+    function changeMode(mode) {
+        document.body.classList.remove('glitch-active');
+        document.getElementById('noise-overlay').style.opacity = 0;
+        document.querySelector('.main-svg').classList.remove('corrupted');
+        parts.forEach(id => {
+            const el = document.getElementById(id);
+            el.classList.remove('active-red', 'defragged', 'clickable-part');
+            el.onmouseenter = el.onmouseleave = el.onclick = null;
+        });
+
+        if (mode === 'corrupt') {
+            bpm = 40;
+            document.getElementById('status-txt').innerText = "CORRUPTION";
+            document.querySelector('.main-svg').classList.add('corrupted');
+            document.querySelector('.ghost-layer').style.opacity = 1;
+            parts.forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.add('active-red', 'clickable-part');
+                el.onclick = () => checkDefrag(id);
+                el.onmouseenter = () => { if(feedbackGain) feedbackGain.gain.setTargetAtTime(0.05, audioCtx.currentTime, 0.05); if(feedbackOsc) feedbackOsc.frequency.value = 200 + Math.random()*800; };
+                el.onmouseleave = () => { if(feedbackGain) feedbackGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05); };
+            });
+            userProgress = 0;
+        } else if (mode === 'nominal') {
+            bpm = 72;
+            document.getElementById('status-txt').innerText = "NOMINAL";
+            document.querySelector('.ghost-layer').style.opacity = 0;
+        }
+        hubChannel.postMessage({ mode, bpm });
+    }
+
+    function checkDefrag(id) {
+        if (id === parts[userProgress]) {
+            document.getElementById(id).classList.add('defragged');
+            userProgress++;
+            hubChannel.postMessage({ mode: 'LOG', msg: `ALIGNED: ${id}` });
+            if (userProgress === parts.length) changeMode('nominal');
+        } else {
+            userProgress = 0;
+            parts.forEach(p => document.getElementById(p).classList.remove('defragged'));
+            hubChannel.postMessage({ mode: 'LOG', msg: "DEFRAG RESET", type: 'crit' });
+        }
+    }
+
+    function runPulse() {
+        const el = document.getElementById('hud-bpm');
+        const spine = document.getElementById('digital-spine');
+        el.style.transform = "translate(-50%, -50%) scale(1.1)";
+        spine.classList.add('spine-surge');
+        spine.innerText = Math.random().toString(2).substring(2, 500);
+        setTimeout(() => spine.classList.remove('spine-surge'), 150);
+        const ring = document.createElement('div');
+        ring.className = 'pulse-ring';
+        if (bpm > 100) { ring.style.borderColor = 'var(--alert)'; spine.style.color = 'var(--alert)'; }
+        else { ring.style.borderColor = 'var(--neon)'; spine.style.color = 'var(--neon)'; }
+        document.getElementById('body-canvas').appendChild(ring);
+        ring.style.animation = `neural-expand ${Math.max(0.5, 60/bpm)}s ease-out forwards`;
+        setTimeout(() => ring.remove(), 2000);
+        setTimeout(() => el.style.transform = "translate(-50%, -50%) scale(1)", 100);
+        setTimeout(runPulse, (60/bpm)*1000);
+    }
+
+    function updateHUD() {
+        const hud = document.getElementById('coords-hud');
+        let html = '';
+        parts.forEach(id => {
+            const rect = document.getElementById(id).getBoundingClientRect();
+            const canvasRect = document.getElementById('body-canvas').getBoundingClientRect();
+            html += `<div>${id.slice(5).toUpperCase()}: X:${Math.round(rect.left-canvasRect.left)} Y:${Math.round(rect.top-canvasRect.top)}</div>`;
+        });
+        hud.innerHTML = html;
+        if(thermalActive) {
+            let heat = Math.min(Math.max((bpm - 40) / 150, 0), 1);
+            document.getElementById('thermal-blur').setAttribute('stdDeviation', heat * 8);
+            parts.forEach(id => {
+                const el = document.getElementById(id);
+                if(!el.classList.contains('defragged')) {
+                    const hue = 180 - (heat * 180);
+                    el.style.stroke = `hsl(${hue}, 100%, 50%)`;
+                    el.style.fill = `hsla(${hue}, 100%, 50%, ${0.05 + heat*0.4})`;
+                }
+            });
+        }
+        requestAnimationFrame(updateHUD);
+    }
+
+    hubChannel.onmessage = (e) => {
+        if (e.data.mode === 'LOCK_UI') document.getElementById('lock-overlay').style.display = 'flex';
+        if (e.data.mode === 'UNLOCK_UI') document.getElementById('lock-overlay').style.display = 'none';
+        if (e.data.mode === 'corrupt') changeMode('corrupt');
+        if (e.data.mode === 'PANIC_KILL') { changeMode('nominal'); document.body.style.opacity = 0.1; setTimeout(()=>document.body.style.opacity=1, 2000); }
+        if (e.data.mode === 'GLITCH_UPDATE') { document.getElementById('noise-overlay').style.opacity = e.data.value * 0.5; if(e.data.value > 0.7) document.body.classList.add('glitch-active'); }
+        if (e.data.mode === 'PULSE_GHOST') { const g = document.querySelector('.ghost-layer'); g.style.filter = "brightness(5)"; setTimeout(()=>g.style.filter="none", 150); }
+        if (e.data.mode === 'TOGGLE_THERMAL') { thermalActive = e.data.value; document.querySelector('.main-svg').style.filter = thermalActive ? "url(#thermal-glow)" : "none"; }
+    };
+
+    document.body.addEventListener('click', initFeedbackAudio, {once: true});
+    runPulse(); updateHUD(); document.querySelector('.main-svg').style.filter = "url(#thermal-glow)";
+    setInterval(() => { document.getElementById('hud-bpm').innerText = bpm + Math.floor(Math.random()*4-2); }, 500);
+</script>
+</body>
+</html>

@@ -22,7 +22,6 @@ The framework explores how physiological activity can be transformed into digita
 
 
 ## Project Status
-
 ## ⚠ Experimental Prototype
 
 This project is currently a research and visualization prototype exploring:

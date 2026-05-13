@@ -12,7 +12,16 @@ This project combines ESP32 biosignal acquisition, real-time signal processing, 
 The framework explores how physiological activity can be transformed into digital telemetry, visualized across a mapped body system, and integrated into reactive cybernetic simulations.
 
 
-Project Status
+## Core Purpose
+
+The sketch acts as a lightweight DSP (digital signal processing) engine that converts muscle activity into structured neural, stress, and threat telemetry for a cybernetic body map system.
+
+This project combines ESP32 biosignal acquisition, real-time signal processing, and browser-based cybernetic HUD systems to create an interactive neural-body simulation environment inspired by futuristic human-machine interfaces.
+
+The framework explores how physiological activity can be transformed into digital telemetry, visualized across a mapped body system, and integrated into reactive cybernetic simulations.
+
+
+## Project Status
 
 ## ⚠ Experimental Prototype
 

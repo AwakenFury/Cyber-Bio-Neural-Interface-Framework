@@ -1,4 +1,4 @@
-![Neural Cursor Banner](assets/Cyber_Bio_Shield.png)
+![Cyber_Bio_Shield](assets/Cyber_Bio_Shield.png)
 
 ![Status](https://img.shields.io/badge/status-experimental-red)
 ![ESP32](https://img.shields.io/badge/platform-ESP32-blue)

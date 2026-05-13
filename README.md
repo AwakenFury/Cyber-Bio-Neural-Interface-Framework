@@ -22,17 +22,16 @@ The framework explores how physiological activity can be transformed into digita
 
 
 ## Features
-Real-time EMG telemetry visualization
-Neural signal path rendering
-Interactive body-state simulation
-Browser-to-device serial communication
-Pulse and resonance animations
-Modular HUD architecture
-BroadcastChannel synchronization
-Experimental recovery/defrag systems
-Threat and anomaly event simulation
-Cyberpunk-inspired UI design
-
+ - Real-time EMG telemetry visualization
+ - Neural signal path rendering
+ - Interactive body-state simulation
+ - Browser-to-device serial communication
+ - Pulse and resonance animations
+ - Modular HUD architecture
+ - BroadcastChannel synchronization
+ - Experimental recovery/defrag systems
+ - Threat and anomaly event simulation
+ - Cyberpunk-inspired UI design
 
 ## Project Status ⚠ Experimental Prototype
 

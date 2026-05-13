@@ -3,7 +3,7 @@
 ![Status](https://img.shields.io/badge/status-experimental-red)
 ![ESP32](https://img.shields.io/badge/platform-ESP32-blue)
 
-## Cyber Bio Neural Interface Framework
+# Cyber Bio Neural Interface Framework
 
 An experimental cybernetic visualization and biosignal platform focused on neural muscular control, digital human mapping, muscle pulsing simulation, and frequency-reactive healing concepts.
 
@@ -21,8 +21,7 @@ This project combines ESP32 biosignal acquisition, real-time signal processing, 
 The framework explores how physiological activity can be transformed into digital telemetry, visualized across a mapped body system, and integrated into reactive cybernetic simulations.
 
 
-## Project Status
-## ⚠ Experimental Prototype
+## Project Status ⚠ Experimental Prototype
 
 This project is currently a research and visualization prototype exploring:
 

@@ -1,0 +1,185 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Cyber Bio Threat Overlay</title>
+<style>
+body{margin:0;background:#01030a;color:#00eaff;font-family:monospace;text-align:center;}
+canvas{border:1px solid #00eaff;display:block;margin:10px auto;background:#01030a;}
+button{padding:10px;background:#00eaff;border:none;color:#000;font-weight:bold;cursor:pointer;}
+</style>
+</head>
+<body>
+<h2>CYBER BIO THREAT OVERLAY</h2>
+<button id="connect">CONNECT ESP32</button>
+<canvas id="bodyMap" width="500" height="700"></canvas>
+
+<script>
+const canvas=document.getElementById("bodyMap");
+const ctx=canvas.getContext("2d");
+
+// Node positions
+let nodes={
+  HEAD:{x:250,y:80},
+  TORSO:{x:250,y:300},
+  ARM_LEFT:{x:150,y:200},
+  ARM_RIGHT:{x:350,y:200},
+  LEG_LEFT:{x:200,y:500},
+  LEG_RIGHT:{x:300,y:500}
+};
+
+// Paths for neural signals
+let paths={
+  EMG:[["HEAD","ARM_LEFT"],["HEAD","ARM_RIGHT"],["HEAD","TORSO"]],
+  EEG:[["HEAD","TORSO"]],
+  GSR:[["HEAD","TORSO"],["TORSO","LEG_LEFT"],["TORSO","LEG_RIGHT"]]
+};
+
+// Trails array
+let trails=[];
+
+// Threats array
+let threats=[];
+
+// Colors
+let colors={EMG:"cyan",EEG:"magenta",GSR:"yellow"};
+let threatColors={EM:"red",RF:"orange",IR:"purple",ANALOG:"white"};
+
+// Web Serial connection
+document.getElementById("connect").onclick=async()=>{
+  const port=await navigator.serial.requestPort();
+  await port.open({baudRate:115200});
+  const reader=port.readable.getReader();
+  const decoder=new TextDecoder();
+
+  while(true){
+    const {value,done}=await reader.read();
+    if(done) break;
+    const text=decoder.decode(value);
+    parseLine(text);
+  }
+};
+
+// Parse serial input
+function parseLine(line){
+  line=line.trim();
+  const parts=line.split(":");
+  if(parts[0]==="THREAT" && parts.length===4){
+    const node=parts[1],type=parts[2],strength=parseFloat(parts[3]);
+    if(nodes[node]) spawnThreat(node,type,strength);
+  } else if(parts.length===3){
+    const type=parts[0],target=parts[1],strength=parseFloat(parts[2]);
+    spawnSignal(type,target,strength);
+  }
+}
+
+// Neural signal
+function spawnSignal(type,target,strength){
+  const typePaths=paths[type];
+  if(!typePaths) return;
+  typePaths.forEach(p=>{
+    if(p[1]===target){
+      const start=nodes[p[0]]; const end=nodes[p[1]];
+      const steps=30; const path=[];
+      for(let i=0;i<=steps;i++){
+        const x=start.x + (end.x-start.x)*i/steps;
+        const y=start.y + (end.y-start.y)*i/steps;
+        path.push({x,y});
+      }
+      trails.push({path,progress:0,strength,stride:0.02+0.05*strength,type});
+    }
+  });
+}
+
+// Threat signal
+function spawnThreat(node,type,strength){
+  threats.push({node,type,strength,age:0});
+}
+
+// Trail color
+function trailColor(type,strength,progress){
+  const c=colors[type];
+  const alpha=(1-progress)*strength;
+  return `rgba(${c==="cyan"?0: c==="magenta"?255:0},${c==="cyan"?255:0},${c==="magenta"?255: c==="yellow"?255:0},${alpha})`;
+}
+
+// Draw skeleton
+function drawBody(){
+  ctx.strokeStyle="#00eaff"; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.arc(nodes.HEAD.x,nodes.HEAD.y,25,0,Math.PI*2);
+  ctx.moveTo(nodes.HEAD.x,nodes.HEAD.y+25);
+  ctx.lineTo(nodes.TORSO.x,nodes.TORSO.y);
+  ctx.moveTo(nodes.TORSO.x,nodes.TORSO.y-50);
+  ctx.lineTo(nodes.ARM_LEFT.x,nodes.ARM_LEFT.y);
+  ctx.moveTo(nodes.TORSO.x,nodes.TORSO.y-50);
+  ctx.lineTo(nodes.ARM_RIGHT.x,nodes.ARM_RIGHT.y);
+  ctx.moveTo(nodes.TORSO.x,nodes.TORSO.y);
+  ctx.lineTo(nodes.LEG_LEFT.x,nodes.LEG_LEFT.y);
+  ctx.moveTo(nodes.TORSO.x,nodes.TORSO.y);
+  ctx.lineTo(nodes.LEG_RIGHT.x,nodes.LEG_RIGHT.y);
+  ctx.stroke();
+}
+
+// Draw neural trails
+function drawTrails(){
+  for(let i=trails.length-1;i>=0;i--){
+    const t=trails[i];
+    const idx=Math.floor(t.progress*(t.path.length-1));
+    const p=t.path[idx];
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,12*t.strength,0,Math.PI*2);
+    ctx.fillStyle=trailColor(t.type,t.strength,t.progress);
+    ctx.fill();
+    t.progress+=t.stride;
+    if(t.progress>=1) trails.splice(i,1);
+  }
+}
+
+// Draw threat overlay
+function drawThreats(){
+  for(let i=threats.length-1;i>=0;i--){
+    const th=threats[i];
+    const n=nodes[th.node];
+    const alpha=Math.max(0,1-th.age/100);
+    ctx.beginPath();
+    ctx.arc(n.x,n.y,20*th.strength,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${threatColors[th.type]==="red"?255:threatColors[th.type]==="orange"?255:128},0,0,${alpha})`;
+    ctx.fill();
+    th.age++;
+    if(th.age>100) threats.splice(i,1);
+  }
+}
+
+// Main loop
+function loop(){
+  ctx.fillStyle="rgba(1,3,10,0.2)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  drawBody();
+  drawTrails();
+  drawThreats();
+  requestAnimationFrame(loop);
+}
+
+// Demo generator for testing
+setInterval(()=>{
+  const types=["EMG","EEG","GSR"];
+  const nodesList=["ARM_LEFT","ARM_RIGHT","LEG_LEFT","LEG_RIGHT","TORSO"];
+  spawnSignal(types[Math.floor(Math.random()*3)],
+              nodesList[Math.floor(Math.random()*nodesList.length)],
+              Math.random());
+  
+  const threatTypes=["EM","RF","IR","ANALOG"];
+  const threatNodes=["HEAD","ARM_LEFT","ARM_RIGHT","LEG_LEFT","LEG_RIGHT","TORSO"];
+  if(Math.random()>0.6){
+    spawnThreat(threatNodes[Math.floor(Math.random()*threatNodes.length)],
+                threatTypes[Math.floor(Math.random()*threatTypes.length)],
+                Math.random());
+  }
+},400);
+
+loop();
+</script>
+</body>
+</html>

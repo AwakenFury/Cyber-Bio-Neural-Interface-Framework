@@ -10,3 +10,17 @@ An experimental cybernetic visualization and biosignal platform focused on neura
 This project combines ESP32 biosignal acquisition, real-time signal processing, and browser-based cybernetic HUD systems to create an interactive neural-body simulation environment inspired by futuristic human-machine interfaces.
 
 The framework explores how physiological activity can be transformed into digital telemetry, visualized across a mapped body system, and integrated into reactive cybernetic simulations.
+
+
+Project Status
+
+## ⚠ Experimental Prototype
+
+This project is currently a research and visualization prototype exploring:
+
+ - cybernetic interface design,
+ - physiological visualization,
+ - neural simulation systems,
+ - and experimental biofeedback concepts.
+
+It is not intended for medical diagnosis, treatment, or healthcare use.

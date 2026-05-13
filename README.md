@@ -21,6 +21,19 @@ This project combines ESP32 biosignal acquisition, real-time signal processing, 
 The framework explores how physiological activity can be transformed into digital telemetry, visualized across a mapped body system, and integrated into reactive cybernetic simulations.
 
 
+Features
+Real-time EMG telemetry visualization
+Neural signal path rendering
+Interactive body-state simulation
+Browser-to-device serial communication
+Pulse and resonance animations
+Modular HUD architecture
+BroadcastChannel synchronization
+Experimental recovery/defrag systems
+Threat and anomaly event simulation
+Cyberpunk-inspired UI design
+
+
 ## Project Status ⚠ Experimental Prototype
 
 This project is currently a research and visualization prototype exploring:

@@ -1,4 +1,4 @@
-![Cyber-Bio-Neural-Interface-Framework](assets/Cyber_Bio_Shield.png)
+![Cyber-Bio-Neural-Interface-Framework](asset/Cyber_Bio_Shield.png)
 
 ![Status](https://img.shields.io/badge/status-experimental-red)
 ![ESP32](https://img.shields.io/badge/platform-ESP32-blue)

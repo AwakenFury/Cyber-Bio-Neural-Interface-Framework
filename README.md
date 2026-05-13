@@ -21,6 +21,20 @@ This project combines ESP32 biosignal acquisition, real-time signal processing, 
 The framework explores how physiological activity can be transformed into digital telemetry, visualized across a mapped body system, and integrated into reactive cybernetic simulations.
 
 
+
+## Core Concepts
+ - Neural muscular control visualization
+ -  EMG-based muscle activity monitoring
+ - Real-time physiological telemetry
+ - Digital human body mapping
+ - Neural pulse simulation
+ - Frequency-reactive feedback systems
+ - Cybernetic HUD interfaces
+ - Threat/anomaly visualization
+ - Synchronization and recovery mechanics
+ - Experimental human-machine interaction
+
+
 ## Features
  - Real-time EMG telemetry visualization
  - Neural signal path rendering

@@ -1,0 +1,275 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BioTech | Unified Command Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --neon-cyan: #00eaff;
+    --neon-red: #ff3b3b;
+    --bg-dark: #030712;
+    --glass: rgba(0, 234, 255, 0.05);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg-dark);
+    font-family: 'Rajdhani', sans-serif; color: var(--neon-cyan);
+    height: 100vh; overflow: hidden;
+  }
+
+  /* Cinematic Scanline Overlay */
+  body::before {
+    content: " "; position: fixed; inset: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+    background-size: 100% 4px, 3px 100%; z-index: 1000; pointer-events: none;
+  }
+
+  #dashboard {
+    display: grid;
+    grid-template-areas: "header header" "sidebar main";
+    grid-template-columns: 260px 1fr;
+    grid-template-rows: 60px 1fr;
+    height: 100vh;
+    background: radial-gradient(circle at center, #07152e 0%, #02050f 100%);
+  }
+
+  /* HEADER */
+  #header {
+    grid-area: header;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 25px; border-bottom: 2px solid var(--neon-cyan);
+    font-family: 'Orbitron'; letter-spacing: 3px;
+    background: rgba(0, 234, 255, 0.02);
+    text-shadow: 0 0 15px var(--neon-cyan);
+  }
+
+  /* SIDEBAR */
+  #sidebar {
+    grid-area: sidebar;
+    border-right: 1px solid rgba(0, 234, 255, 0.1);
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 15px;
+  }
+
+  /* MAIN CONTENT AREA */
+  #main-stage { grid-area: main; padding: 20px; overflow-y: auto; position: relative; }
+
+  /* VIEW TOGGLE LOGIC */
+  .view-container { display: none; grid-template-columns: 1fr 1fr; gap: 20px; height: 100%; }
+  .view-container.active { display: grid; }
+
+  /* COMPONENTS */
+  .glass-panel {
+    background: rgba(0, 0, 0, 0.6); border-left: 4px solid var(--neon-cyan);
+    padding: 15px; margin-bottom: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  }
+
+  h3 { font-family: 'Orbitron'; font-size: 13px; margin: 0 0 10px 0; color: #fff; text-transform: uppercase; }
+  h4 { font-family: 'Orbitron'; font-size: 10px; margin: 5px 0; opacity: 0.8; }
+  
+  .bioRow { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(0,234,255,0.05); font-size: 13px; }
+
+  /* RADAR CORE */
+  #core {
+    position: relative; width: 380px; height: 380px;
+    border-radius: 50%; border: 2px solid var(--neon-cyan); margin: 0 auto;
+    box-shadow: 0 0 25px var(--neon-cyan), 0 0 50px var(--neon-cyan) inset;
+  }
+  #sweep { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(rgba(0,234,255,0.3), transparent); animation: sweep 3s linear infinite; }
+  .ring { position: absolute; inset: 0; border: 1px solid rgba(0,255,255,0.1); border-radius: 50%; animation: spin 20s linear infinite; }
+  .blip { position: absolute; width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 10px #00ffcc; animation: pulse 2s infinite; }
+
+  /* VISUALS */
+  canvas.wave { background: #000; border: 1px solid rgba(0,234,255,0.2); border-radius: 4px; width: 100%; height: 45px; }
+  .meter { height: 10px; background: #02050f; border: 1px solid var(--neon-cyan); border-radius: 5px; overflow: hidden; margin: 5px 0; }
+  .meter-bar { height: 100%; width: 0%; background: var(--neon-cyan); transition: width 0.5s; }
+  
+  /* BUTTONS */
+  .nav-btn {
+    background: transparent; border: 1px solid var(--neon-cyan); color: var(--neon-cyan);
+    padding: 12px; font-family: 'Orbitron'; font-size: 10px; cursor: pointer;
+    clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+    text-align: center; transition: 0.3s;
+  }
+  .nav-btn.active { background: rgba(0, 234, 255, 0.2); box-shadow: 0 0 15px var(--neon-cyan); }
+  .crewCard { background: var(--glass); border: 1px solid rgba(0,234,255,0.1); padding: 10px; margin-bottom: 8px; cursor: pointer; font-size: 12px; }
+  .crewCard:hover { background: rgba(0, 234, 255, 0.1); }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes sweep { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.5);} }
+</style>
+</head>
+<body>
+
+<div id="dashboard">
+  <header id="header">
+    <span>UNIFIED BIO-COMMAND</span>
+    <span id="sysStatus" style="font-size: 12px;">SYSTEM: <span style="color: var(--neon-cyan)">NOMINAL</span></span>
+  </header>
+
+  <aside id="sidebar">
+    <button class="nav-btn active" onclick="showView('radar')">TACTICAL RADAR</button>
+    <button class="nav-btn" onclick="showView('crew')">CREW DIRECTORY</button>
+    <button class="nav-btn" onclick="showView('admin')">SPECTRAL ADMIN</button>
+    
+    <div class="glass-panel" style="margin-top: 20px;">
+      <h3>GLOBAL ALERT</h3>
+      <div style="font-size: 11px; opacity: 0.8;">No critical anomalies detected in local sector.</div>
+    </div>
+  </aside>
+
+  <main id="main-stage">
+
+    <!-- MODE 1: RADAR -->
+    <div id="view-radar" class="view-container active" style="grid-template-columns: 1.2fr 1fr;">
+      <div style="display: flex; align-items: center; justify-content: center;">
+        <div id="core">
+          <div id="sweep"></div>
+          <div class="ring" style="inset: 15%;"></div>
+          <div class="ring" style="inset: 40%; border-style: dashed;"></div>
+        </div>
+      </div>
+      <div>
+        <div class="glass-panel">
+          <h3>AREA DETECTION</h3>
+          <div class="bioRow"><span>Range</span><span id="range">--</span></div>
+          <div class="bioRow"><span>Motion</span><span id="motion">--</span></div>
+          <canvas id="radarWave" class="wave" style="margin-top: 10px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE 2: CREW -->
+    <div id="view-crew" class="view-container" style="grid-template-columns: 240px 1fr 1fr;">
+      <div id="crewList">
+        <h3>CREW PROFILES</h3>
+        <div class="crewCard" onclick="loadCrew('alpha')">ALPHA [Navigator]</div>
+        <div class="crewCard" onclick="loadCrew('bravo')">BRAVO [Engineer]</div>
+        <div class="crewCard" onclick="loadCrew('charlie')">CHARLIE [Security]</div>
+      </div>
+      <div>
+        <div class="glass-panel">
+          <h3 id="crewName">Select Profile</h3>
+          <h4 id="crewRole">--</h4>
+        </div>
+        <div class="glass-panel">
+          <h3>VITAL WAVEFORMS</h3>
+          <h4>ECG MONITOR</h4>
+          <canvas id="crewECG" class="wave"></canvas>
+          <h4>RESPIRATION</h4>
+          <canvas id="crewResp" class="wave"></canvas>
+        </div>
+      </div>
+      <div>
+         <div class="glass-panel">
+          <h3>STABILITY</h3>
+          <h4>EM FIELD</h4>
+          <div class="meter"><div class="meter-bar" id="emBar"></div></div>
+          <h4>DEVIATION</h4>
+          <div class="meter"><div class="meter-bar" id="devBar"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODE 3: SPECTRAL ADMIN -->
+    <div id="view-admin" class="view-container" style="grid-template-columns: 1fr 1fr;">
+      <div class="glass-panel">
+        <h3>RF SIGNATURE ANALYSIS</h3>
+        <canvas id="rfWave" class="wave" style="height: 150px;"></canvas>
+        <div class="bioRow"><span>Frequency</span><span>2.4 GHz</span></div>
+        <div class="bioRow"><span>Bandwidth</span><span>80 MHz</span></div>
+      </div>
+      <div class="glass-panel">
+        <h3>ANOMALY LOG</h3>
+        <div id="logBox" style="font-family: monospace; font-size: 11px; height: 300px; overflow-y: auto; line-height: 1.5;">
+          [00:00:00] SYSTEM INITIALIZED...<br>
+          [00:00:01] SPECTRUM ANALYSIS ONLINE...
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const views = ['radar', 'crew', 'admin'];
+  const crewProfiles = {
+    "alpha": { name: "Crew Alpha", role: "Navigator", em: 45, dev: 8 },
+    "bravo": { name: "Crew Bravo", role: "Engineer", em: 78, dev: 42 },
+    "charlie": { name: "Crew Charlie", role: "Security", em: 50, dev: 12 }
+  };
+
+  // Switch View Logic
+  function showView(viewId) {
+    document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('view-' + viewId).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  // Crew Profile Logic
+  function loadCrew(id) {
+    const p = crewProfiles[id];
+    document.getElementById("crewName").innerText = p.name.toUpperCase();
+    document.getElementById("crewRole").innerText = "DESIGNATION: " + p.role.toUpperCase();
+    document.getElementById("emBar").style.width = p.em + "%";
+    document.getElementById("devBar").style.width = p.dev + "%";
+    logMsg(`Accessing biometrics for ${p.name}`);
+  }
+
+  function logMsg(msg) {
+    const box = document.getElementById("logBox");
+    box.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>` + box.innerHTML;
+  }
+
+  // Animation & Canvas Logic
+  const ctxs = {
+    radar: document.getElementById("radarWave").getContext("2d"),
+    ecg: document.getElementById("crewECG").getContext("2d"),
+    resp: document.getElementById("crewResp").getContext("2d"),
+    rf: document.getElementById("rfWave").getContext("2d")
+  };
+
+  function drawWave(ctx, offset, color) {
+    ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
+    for(let i=0; i<100; i++) {
+      const x = i * (ctx.canvas.width/100);
+      const y = ctx.canvas.height/2 + Math.sin(i/5 + offset) * 15;
+      i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  function spawnBlip() {
+    const core = document.getElementById('core');
+    const b = document.createElement('div');
+    b.className = 'blip';
+    b.style.left = (Math.random() * 300 + 40) + 'px';
+    b.style.top = (Math.random() * 300 + 40) + 'px';
+    core.appendChild(b);
+    setTimeout(() => b.remove(), 2000);
+  }
+
+  let frame = 0;
+  function update() {
+    frame += 0.1;
+    drawWave(ctxs.radar, frame, "#00eaff");
+    drawWave(ctxs.ecg, frame * 2, "#00eaff");
+    drawWave(ctxs.resp, frame * 0.5, "#00eaff");
+    drawWave(ctxs.rf, frame * 3, "rgba(0, 234, 255, 0.4)");
+
+    if(Math.random() > 0.95) spawnBlip();
+    requestAnimationFrame(update);
+  }
+
+  update();
+</script>
+</body>
+</html>
